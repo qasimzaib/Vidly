@@ -1,30 +1,67 @@
-﻿@model IEnumerable<Vidly.Models.Movie>
-@{
+﻿@{
 	ViewBag.Title = "Index";
 }
 
 <h2>Movies</h2>
 <p>@Html.ActionLink("Add New", "NewMovie", "Movies", null, new { @class = "btn btn-primary" })</p>
 
-@if (!Model.Any ()) {
-	<p>There are no movies to display</p>
-} else {
-	<table class="table table-bordered table-hover">
-		<thead>
-			<tr>
-				<td>Movie</td>
-				<td>Genre</td>
-				<td>Year</td>
-			</tr>
-		</thead>
-		<tbody>
-			@foreach (var m in Model) {
-				<tr>
-					<td>@Html.ActionLink(m.Name, "EditMovie", "Movies", new { id = m.Id }, null)</td>
-					<td>@m.Genre.Name</td>
-					<td>@m.ReleaseDate.Year</td>
-				</tr>
-			}
-		</tbody>
-	</table>
+<table id="movies" class="table table-bordered table-hover">
+	<thead>
+		<tr>
+			<td>Movie</td>
+			<td>Genre</td>
+			<td>Year</td>
+			<td>Delete</td>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
+
+@section scripts {
+	<script>
+		$(document).ready(function () {
+			var table = $("#movies").DataTable({
+				ajax: {
+					url: "/api/movies",
+					dataSrc: ""
+				},
+				columns: [
+					{
+						data: "name",
+						render: function (data, type, movie) {
+							return "<a href='/movies/editmovie/" + movie.id + "'>" + data + "</a>";
+						}
+					}, {
+						data: "genre.name"
+					}, {
+						data: "releaseDate",
+						render: function (data) {
+							var year = new Date (data);
+							return year.getFullYear();
+						}
+					}, {
+						data: "id",
+						render: function (data) {
+							return "<button class='btn btn-link js-delete' data-movie-id=" + data + ">Delete</button>";
+						}
+					}
+				]
+			});
+
+			$("#movies").on("click", ".js-delete", function () {
+				var button = $(this);
+				bootbox.confirm("Are you sure?", function (result) {
+					if (result) {
+						$.ajax({
+							url: "/api/movies/" + button.attr("data-movie-id"),
+							method: "DELETE",
+							success: function () {
+								table.row(button.parents("tr")).remove().draw();
+							}
+						});
+					}
+				});
+			});
+		});
+	</script>
 }
